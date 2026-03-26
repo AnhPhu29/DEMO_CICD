@@ -1,19 +1,31 @@
-name: Thử nghiệm đọc file README  #Tên quy trình
+name: CI/CD - Build & Deploy
 
 on:
   push:
-    branches: [ "main" ]  #Chạy khi có code mới đẩy lên nhánh main
+    branches: [ "main" ]  # Chạy khi push lên nhánh main
 
 jobs:
-  thuc_hanh_doc_file:
-    runs-on: ubuntu-latest  #Mượn máy ảo Ubuntu của GitHub để chạy
+  build-and-push:
+    name: Build Docker Image & Push to DockerHub
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Bước 1 - Xin chào
-        run: echo "Hello HUTECH!"  #Lệnh in ra màn hình
+      - name: Bước 1 - Tải code về
+        uses: actions/checkout@v4
 
-      - name: Bước 2 - Tải code
-        uses: actions/checkout@v4  #Robot tự động copy code vào máy ảo
+      - name: Bước 2 - Đăng nhập DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Bước 3 - Đọc file
-        run: cat README.md       #Mở nội dung file README.md để xem
+      - name: Bước 3 - Build & Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: nguyenanhphu/nguyenanhphu:latest
+
+      - name: Bước 4 - Trigger Deploy qua Webhook
+        run: |
+          curl -X POST ${{ secrets.DEPLOY_URL }}
